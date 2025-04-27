@@ -29,6 +29,23 @@ export const api = {
     return response.data;
   },
 
+  verifyEmail: async (userId: number, otpCode: string) => {
+    const response = await apiClient.post('/auth/verify-email/', {
+      user_id: userId,
+      otp_code: otpCode
+    });
+    return response.data;
+  },
+
+  resendVerification: async (userId?: number, email?: string) => {
+    const data: any = {};
+    if (userId) data.user_id = userId;
+    if (email) data.email = email;
+
+    const response = await apiClient.post('/auth/resend-verification/', data);
+    return response.data;
+  },
+
   // Content types
   getContentTypes: async (): Promise<ContentType[]> => {
     const response = await apiClient.get('/content-types/');
