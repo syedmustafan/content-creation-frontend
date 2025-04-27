@@ -1,3 +1,6 @@
+// src/components/ui/ContentCard.tsx
+
+
 import React from 'react';
 import Link from 'next/link';
 import { Content } from '../../types';

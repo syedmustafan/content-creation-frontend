@@ -3,6 +3,7 @@ import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { ContentType, ContentRequest } from '../../types';
 import { api } from '../../lib/api';
+import { LimitReachedModal } from '../ui/LimitReachedModal';
 
 interface ContentCreationFormProps {
   onContentGenerated: (content: any) => void;
@@ -35,19 +36,25 @@ export const ContentCreationForm: React.FC<ContentCreationFormProps> = ({
 }) => {
   const [contentTypes, setContentTypes] = useState<ContentType[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [usageCount, setUsageCount] = useState<number | null>(null);
 
-  // Fetch content types on component mount
+  // Fetch content types and user profile on component mount
   useEffect(() => {
-    const fetchContentTypes = async () => {
+    const fetchData = async () => {
       try {
         const types = await api.getContentTypes();
         setContentTypes(types);
+
+        // Get user profile to show usage count
+        const profile = await api.getUserProfile();
+        setUsageCount(profile.api_requests_count);
       } catch (error) {
         onError('Failed to load content types. Please try again later.');
       }
     };
 
-    fetchContentTypes();
+    fetchData();
   }, [onError]);
 
   // Initial form values
@@ -67,16 +74,49 @@ export const ContentCreationForm: React.FC<ContentCreationFormProps> = ({
     try {
       const content = await api.generateContent(values);
       onContentGenerated(content);
+
+      // Update usage count after successful generation
+      try {
+        const profile = await api.getUserProfile();
+        setUsageCount(profile.api_requests_count);
+      } catch (e) {
+        // Silently fail if can't update usage count
+      }
     } catch (error: any) {
-      onError(error.response?.data?.error || 'Failed to generate content. Please try again.');
+      // Check if it's a limit reached error
+      if (error.response?.status === 403 && error.response?.data?.limit_reached) {
+        setShowLimitModal(true);
+      } else {
+        onError(error.response?.data?.error || 'Failed to generate content. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  const isPremiumUser = usageCount !== null && usageCount >= 10;
+
   return (
     <div className="card">
       <h2 className="text-2xl font-bold text-text-primary mb-6">Create Content</h2>
+
+      {/* Usage limit indicator */}
+      {usageCount !== null && !isPremiumUser && (
+        <div className="mb-6 p-3 bg-secondary rounded-md">
+          <div className="flex justify-between items-center">
+            <span className="text-text-secondary">Monthly Usage: {usageCount}/10</span>
+            <span className="text-xs px-2 py-1 bg-accent/20 text-accent rounded-full">
+              Free Plan
+            </span>
+          </div>
+          <div className="mt-2 w-full bg-border rounded-full h-2.5">
+            <div
+              className="bg-accent h-2.5 rounded-full"
+              style={{ width: `${(usageCount / 10) * 100}%` }}
+            ></div>
+          </div>
+        </div>
+      )}
 
       <Formik
         initialValues={initialValues}
@@ -229,6 +269,12 @@ export const ContentCreationForm: React.FC<ContentCreationFormProps> = ({
           </Form>
         )}
       </Formik>
+
+      {/* Limit Reached Modal */}
+      <LimitReachedModal
+        isOpen={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+      />
     </div>
   );
 };

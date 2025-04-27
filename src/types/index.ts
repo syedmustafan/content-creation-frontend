@@ -1,3 +1,5 @@
+// src/types/index.ts
+
 export interface User {
   id: number;
   username: string;
@@ -8,8 +10,8 @@ export interface User {
 
 export interface UserProfile {
   user: User;
-  apiRequestsCount: number;
-  premiumUser: boolean;
+  api_requests_count: number;
+  premium_user: boolean;
 }
 
 export interface ContentType {

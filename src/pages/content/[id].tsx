@@ -1,3 +1,5 @@
+// pages/content/[id].tsx
+
 import type { NextPage } from 'next';
 import Head from 'next/head';
 import { useRouter } from 'next/router';

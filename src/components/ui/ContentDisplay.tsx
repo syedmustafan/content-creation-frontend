@@ -1,3 +1,5 @@
+// src/components/ui/ContentDisplay.tsx
+
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Content } from '../../types';

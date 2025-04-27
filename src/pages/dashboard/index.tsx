@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { ContentCreationForm } from '../../components/forms/ContentCreationForm';
 import { ContentDisplay } from '../../components/ui/ContentDisplay';
+import { UserUsage } from '../../components/ui/UserUsage';
 import { Content, ContentType } from '../../types';
 import { api } from '../../lib/api';
 
@@ -16,18 +17,38 @@ const Dashboard: NextPage<DashboardProps> = ({ user }) => {
   const [generatedContent, setGeneratedContent] = useState<Content | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!user) {
       router.push('/login');
+    } else {
+      fetchUserProfile();
     }
   }, [user, router]);
+
+  const fetchUserProfile = async () => {
+    try {
+      setLoading(true);
+      const profile = await api.getUserProfile();
+      setUserProfile(profile);
+      setError(null);
+    } catch (error) {
+      setError('Failed to load user profile. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleContentGenerated = (content: Content) => {
     setGeneratedContent(content);
     setError(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Refresh user profile to update usage count
+    fetchUserProfile();
   };
 
   const handleError = (errorMsg: string) => {
@@ -68,6 +89,17 @@ const Dashboard: NextPage<DashboardProps> = ({ user }) => {
           {successMessage}
         </div>
       )}
+
+      {loading ? (
+        <div className="flex justify-center my-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
+        </div>
+      ) : userProfile ? (
+        <UserUsage
+          apiRequestsCount={userProfile.api_requests_count || 0}
+          isPremium={userProfile.premium_user || false}
+        />
+      ) : null}
 
       {generatedContent && (
         <div className="mb-8">

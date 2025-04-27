@@ -1,15 +1,14 @@
+// src/lib/api.ts
+
 import axios from 'axios';
-import { ContentRequest, Content, ContentType, UserProfile } from '../types';
+import { Content, ContentType, ContentRequest, UserProfile } from '../types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://content-creation-app-c3e91f98caef.herokuapp.com/api';
-
-// Create axios instance with authentication
+// Create axios instance with base URL
 const apiClient = axios.create({
-  baseURL: API_URL,
-  withCredentials: true,
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
 });
 
-// Add auth token to requests
+// Add request interceptor to include token in headers
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('auth_token');
   if (token) {
@@ -18,9 +17,8 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// API functions
 export const api = {
-  // Auth
+  // Auth endpoints
   login: async (username: string, password: string) => {
     const response = await apiClient.post('/auth/login/', { username, password });
     return response.data;
@@ -31,24 +29,19 @@ export const api = {
     return response.data;
   },
 
-  // User Profile
-  getUserProfile: async (): Promise<UserProfile> => {
-    const response = await apiClient.get('/profile/me/');
-    return response.data;
-  },
-
-  // Content Types
+  // Content types
   getContentTypes: async (): Promise<ContentType[]> => {
     const response = await apiClient.get('/content-types/');
     return response.data;
   },
 
-  // Content
+  // Content generation
   generateContent: async (contentRequest: ContentRequest): Promise<Content> => {
     const response = await apiClient.post('/content/generate/', contentRequest);
     return response.data;
   },
 
+  // User content
   getUserContent: async (): Promise<Content[]> => {
     const response = await apiClient.get('/content/');
     return response.data;
@@ -61,5 +54,40 @@ export const api = {
 
   deleteContent: async (id: number): Promise<void> => {
     await apiClient.delete(`/content/${id}/`);
+  },
+
+  // User profile
+  getUserProfile: async (): Promise<UserProfile> => {
+    const response = await apiClient.get('/profile/me/');
+    return response.data;
+  },
+
+  // Premium subscription management
+  upgradeToPremium: async (): Promise<any> => {
+    // In a real implementation, this would likely send payment information
+    // or redirect to a payment processor
+    const response = await apiClient.post('/profile/upgrade/');
+    return response.data;
+  },
+
+  cancelSubscription: async (): Promise<any> => {
+    const response = await apiClient.post('/profile/cancel-subscription/');
+    return response.data;
+  },
+
+  // Handle 401 Unauthorized globally
+  setupErrorHandling: (onUnauthorized: () => void) => {
+    apiClient.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response && error.response.status === 401) {
+          // Clear local token
+          localStorage.removeItem('auth_token');
+          // Call the callback
+          onUnauthorized();
+        }
+        return Promise.reject(error);
+      }
+    );
   }
 };
