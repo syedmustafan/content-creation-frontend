@@ -57,8 +57,25 @@ export const ContentCreationForm: React.FC<ContentCreationFormProps> = ({
     fetchData();
   }, [onError]);
 
+  // Check for a saved template in localStorage
+  const getSavedTemplate = () => {
+    try {
+      const savedTemplate = localStorage.getItem('content_template');
+      if (savedTemplate) {
+        const template = JSON.parse(savedTemplate);
+        // Clear the template after loading it
+        localStorage.removeItem('content_template');
+        return template;
+      }
+    } catch (e) {
+      console.error('Error loading saved template:', e);
+    }
+    return null;
+  };
+
   // Initial form values
-  const initialValues: ContentRequest = {
+  const templateValues = getSavedTemplate();
+  const initialValues: ContentRequest = templateValues || {
     content_type: 0,
     topic: '',
     tone: '',

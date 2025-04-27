@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { ContentCreationForm } from '../../components/forms/ContentCreationForm';
 import { ContentDisplay } from '../../components/ui/ContentDisplay';
 import { UserUsage } from '../../components/ui/UserUsage';
+import { DashboardNav } from '../../components/ui/DashboardNav';
 import { Content, ContentType } from '../../types';
 import { api } from '../../lib/api';
 
@@ -89,6 +90,9 @@ const Dashboard: NextPage<DashboardProps> = ({ user }) => {
           {successMessage}
         </div>
       )}
+
+      {/* Dashboard Navigation */}
+      <DashboardNav />
 
       {loading ? (
         <div className="flex justify-center my-12">
